@@ -75,6 +75,28 @@ router.post('/update',function(req,res){
      res.send({code:1,data})
   })
 })
+
+// 4. 根据cookie的userid获取用户信息
+router.get('/user',function(req,res){
+  const {userid} = req.cookies
+  if(!userid){
+    res.send({code:0,message:'请先登录'})
+    return
+  }
+
+  const filter = {password:0,__v:0}  // 查询时指定过滤属性
+  UserModel.findOne({_id:userid},filter,function(err,user){
+     res.send({code:1,data:user})
+  })
+})
  
+// 5. 获取指定类型的用户列表
+router.get('/userlist',function(req,res){
+  const filter = {password:0,__v:0}  // 查询时指定过滤属性
+  const {type} = req.query
+  UserModel.find({type},filter,function(err,users){
+    res.send({code:1,data:users})
+  })
+})
 
 module.exports = router;
