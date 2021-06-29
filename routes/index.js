@@ -3,7 +3,7 @@ var router = express.Router();
 
 const md5 = require('blueimp-md5')
 
-const {UserModel} = require('../db/models')
+const {UserModel,ChatModel} = require('../db/models')
 
 /* boss直聘项目的路由 */
 
@@ -99,4 +99,41 @@ router.get('/userlist',function(req,res){
   })
 })
 
+
+// 6. 获取当前用户所有相关聊天信息的列表
+router.get('/msgList',function(req,res){
+  const filter = {password:0,__v:0}  // 查询时指定过滤属性
+  const {userid} = req.cookies
+  // 查询得到所有的user文档数组
+  ChatModel.find({_id:userid},function(err,userDocs){
+    // 用对象存储用户的所有信息
+    // const users  = {}
+    // userDocs.forEach(doc => {
+    //   users[doc._id] = {username:doc.username,header:doc.header}
+    // })
+    
+    const users = userDocs.reduce((users,user) => {
+      users[user._id] = {username:user.username,header:user.header}
+      return users
+    },{})
+
+    ChatModel.find({'$or':[{from: userid},{to: userid}]},filter,function(err,chatMsgs){
+
+          res.send({code:1,data:{users,chatMsgs}})
+    })
+
+  })
+})
+
+
+// 7. 修改指定消息已读
+router.post('/readMsg',function(req,res){
+  const {from} = req.body
+  const {userid} = req.cookies
+
+  ChatModel.updateMany({from,to,read:false},{read:true},{multi:true},function(err,doc){
+    console.log('/readMsg',doc);
+    res.send({code:1,data:doc.nModified})  // 更新的数量
+  })
+})
 module.exports = router;
